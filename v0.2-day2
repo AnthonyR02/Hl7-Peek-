@@ -1,0 +1,68 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <unordered_map>
+
+// simple helper to split strings by a delimiter
+static std::vector<std::string> split(const std::string& s, char delim) {
+    std::vector<std::string> out;
+    std::string cur;
+    for (char c : s) {
+        if (c == delim) {
+            out.push_back(cur);
+            cur.clear();
+        } else {
+            cur.push_back(c);
+        }
+    }
+    out.push_back(cur); // push the last piece
+    return out;
+}
+
+int main(int argc, char** argv) {
+    std::string data;
+
+    // if a file is passed as an argument, read from it
+    // otherwise, read from stdin (pipe or user input)
+    if (argc > 1) {
+        std::ifstream ifs(argv[1], std::ios::binary);
+        if (!ifs) {
+            std::cerr << "Could not open file: " << argv[1] << "\\n";
+            return 2;
+        }
+        data.assign((std::istreambuf_iterator<char>(ifs)),
+                     std::istreambuf_iterator<char>());
+    } else {
+        data.assign((std::istreambuf_iterator<char>(std::cin)),
+                     std::istreambuf_iterator<char>());
+    }
+
+    if (data.empty()) {
+        std::cerr << "No input provided.\\n";
+        return 1;
+    }
+
+    // split HL7 data into segments (separated by CR or LF)
+    std::vector<std::string> segments;
+    std::string seg;
+    for (char c : data) {
+        if (c == '\\r' || c == '\\n') {
+            if (!seg.empty()) {
+                segments.push_back(seg);
+                seg.clear();
+            }
+        } else {
+            seg.push_back(c);
+        }
+    }
+    if (!seg.empty()) segments.push_back(seg); // add the last segment
+
+    // print a simple summary of what we found
+    std::cout << "HL7 Segments Found: " << segments.size() << "\\n";
+    for (const auto& s : segments) {
+        std::cout << "  " << s << "\\n";
+    }
+
+    return 0;
+}
